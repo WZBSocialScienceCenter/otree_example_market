@@ -1,0 +1,77 @@
+{% extends "global/Page.html" %}
+{% load otree static %}
+
+{% block styles %}
+    <style>
+        #offers ul {
+            list-style-type: none;
+            padding: 0 0 0.5em 1em;
+            margin: 0 0 1em 0;
+            border-bottom: 1px solid black;
+        }
+
+        #offers ul li {
+            line-height: 3;
+        }
+
+        #offers label, #offers input, #offers select {
+            display: inline;
+        }
+
+        #offers .input-group {
+
+        }
+    </style>
+{% endblock %}
+
+{% block title %}
+    Create offers
+{% endblock %}
+
+{% block content %}
+
+    <p>You are a <b>{{ player.role }}</b>.</p>
+
+    {% if player.role == 'buyer' %}
+        <p>The sellers are currently deciding on their offers. Just click "Next" and wait until they finished.</p>
+    {% else %}
+        <p>You must decide on your offers now. You have an initial balance of <b>{{ player.balance }}</b>.</p>
+
+        {{ offers_formset.management_form }}
+
+        <div id="offers">
+        {% for offer_form in offers_formset %}
+            <h4>Offer #{{ forloop.counter }}</h4>
+            <ul>
+                {{ offer_form.as_ul }}
+            </ul>
+        {% endfor %}
+        </div>
+
+        <input type="button" value="+" id="add_offer">
+
+        <div id="empty_offers_form" style="display:none">
+            <h4>Offer #<span class="offer_counter"></span></h4>
+            <ul>
+                {{ offers_formset.empty_form.as_ul }}
+            </ul>
+        </div>
+    {% endif %}
+
+
+    <p>
+        {% next_button %}
+    </p>
+
+{% if player.role == 'seller' %}
+    <script>
+        $('#add_offer').click(function() {
+            var form_idx = parseInt($('#id_form-TOTAL_FORMS').val());
+            var new_offer_form = $($('#empty_offers_form').html().replace(/__prefix__/g, form_idx));
+            new_offer_form.find('.offer_counter').text(form_idx+1);
+            $('#offers').append(new_offer_form);
+            $('#id_form-TOTAL_FORMS').val(form_idx+1);
+        });
+    </script>
+{% endif %}
+{% endblock %}
