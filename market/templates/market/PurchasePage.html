@@ -1,0 +1,22 @@
+{% extends "global/Page.html" %}
+{% load otree static %}
+
+{% block styles %}
+{% endblock %}
+
+{% block title %}
+    Purchase fruits
+{% endblock %}
+
+{% block content %}
+
+    <p>You are a <b>{{ player.role }}</b>.</p>
+
+
+
+    <p>
+        {% next_button %}
+    </p>
+
+
+{% endblock %}

@@ -52,8 +52,8 @@ class FruitOffer(Model):
         ('banana', 'Banana'),
     )
 
-    amount = models.IntegerField(min=0, initial=0)  # number of fruits available
-    price = models.CurrencyField(min=0, initial=0)
+    amount = models.IntegerField(label='Amount', min=0, initial=0)           # number of fruits available
+    price = models.CurrencyField(label='Price per fruit', min=0, initial=0)
     kind = models.StringField(choices=KINDS)
     is_organic = models.BooleanField()   # if True: organic fruit, else conventional
 
