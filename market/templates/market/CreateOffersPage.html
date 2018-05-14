@@ -18,8 +18,8 @@
             display: inline;
         }
 
-        #offers .input-group {
-
+        #offers .price_disp {
+            margin-left: 0.5em;
         }
     </style>
 {% endblock %}
@@ -37,6 +37,13 @@
     {% else %}
         <p>You must decide on your offers now. You have an initial balance of <b>{{ player.balance }}</b>.</p>
 
+        <p>Purchase prices per fruit for you as a seller:</p>
+        <ul>
+        {% for fruit_label, price in purchase_prices.items %}
+            <li><b>{{ fruit_label }}:</b> {{ price }}</li>
+        {% endfor %}
+        </ul>
+
         {{ offers_formset.management_form }}
 
         <div id="offers">
@@ -48,7 +55,7 @@
         {% endfor %}
         </div>
 
-        <input type="button" value="+" id="add_offer">
+        <p><input type="button" value="+" id="add_offer"></p>
 
         <div id="empty_offers_form" style="display:none">
             <h4>Offer #<span class="offer_counter"></span></h4>
@@ -56,8 +63,9 @@
                 {{ offers_formset.empty_form.as_ul }}
             </ul>
         </div>
-    {% endif %}
 
+        <p>Your balance is now: &dollar;<span id="cur_balance"></span></p>
+    {% endif %}
 
     <p>
         {% next_button %}
@@ -65,12 +73,47 @@
 
 {% if player.role == 'seller' %}
     <script>
+        var PURCHASE_PRICES = {{ purchase_prices|json }};
+
         $('#add_offer').click(function() {
             var form_idx = parseInt($('#id_form-TOTAL_FORMS').val());
             var new_offer_form = $($('#empty_offers_form').html().replace(/__prefix__/g, form_idx));
             new_offer_form.find('.offer_counter').text(form_idx+1);
             $('#offers').append(new_offer_form);
             $('#id_form-TOTAL_FORMS').val(form_idx+1);
+        });
+
+        function formElemChanged() {
+            var regex_res = /^id_form-(\d+)-(\w+)$/.exec(this.id);
+            if (regex_res !== null && regex_res.length === 3) {
+                var form_idx = parseInt(regex_res[1]);
+                var input = regex_res[2];
+
+                if (input === 'amount' || input === 'kind') {
+                    var amount_field = $('#id_form-' + form_idx + '-amount');
+                    var amount = parseFloat(amount_field.val());
+                    var kind = $('#id_form-' + form_idx + '-kind').val();
+                    var price_disp_id = 'id_form-' + form_idx + '-pricedisplay';
+
+                    if (PURCHASE_PRICES.hasOwnProperty(kind) && !Number.isNaN(amount)) {
+                        var price = PURCHASE_PRICES[kind] * amount;
+                        var price_disp = $('#' + price_disp_id);
+                        if (price_disp.length === 0) {
+                            price_disp = $('<span class="price_disp" id="' + price_disp_id + '"></span>');
+                            amount_field.after(price_disp);
+                        }
+
+                        price_disp.html('cost: <b>&dollar;' + price.toFixed(2) + '</b>');
+                    } else {
+                        $('#' + price_disp_id).remove();
+                    }
+                }
+            }
+        }
+
+        $(function() {
+            $('#offers input').on('input', formElemChanged);
+            $('#offers select').on('input', formElemChanged);
         });
     </script>
 {% endif %}

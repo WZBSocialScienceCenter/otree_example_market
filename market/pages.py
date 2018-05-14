@@ -1,10 +1,12 @@
+import json
+
 from otree.api import Currency as c, currency_range
 from ._builtin import Page, WaitPage
 from .models import Constants, FruitOffer
 from django.forms import modelformset_factory
 
 
-OffersFormSet = modelformset_factory(FruitOffer, fields=('kind', 'is_organic', 'amount', 'price'), extra=1)
+OffersFormSet = modelformset_factory(FruitOffer, fields=('kind', 'amount', 'price'), extra=1)
 
 
 class CreateOffersPage(Page):
@@ -12,6 +14,7 @@ class CreateOffersPage(Page):
         if self.player.role() == 'seller':
             player_offers_qs = FruitOffer.objects.filter(seller=self.player)
             return {
+                'purchase_prices': FruitOffer.PURCHASE_PRICES,
                 'offers_formset': OffersFormSet(queryset=player_offers_qs),
             }
         else:

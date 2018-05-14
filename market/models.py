@@ -6,6 +6,7 @@ from otree.api import (
 )
 
 from otree.db.models import ForeignKey, Model
+from django import forms
 
 author = 'Markus Konrad'
 
@@ -47,15 +48,21 @@ class Player(BasePlayer):
 
 class FruitOffer(Model):
     KINDS = (
-        ('apple', 'Apple'),
-        ('orange', 'Orange'),
-        ('banana', 'Banana'),
+        ('Apple', 'Apple'),
+        ('Orange', 'Orange'),
+        ('Banana', 'Banana'),
     )
+    PURCHASE_PRICES = {
+        'Apple': c(0.20),
+        'Orange': c(0.30),
+        'Banana': c(0.50),
+    }
 
     amount = models.IntegerField(label='Amount', min=0, initial=0)           # number of fruits available
     price = models.CurrencyField(label='Price per fruit', min=0, initial=0)
     kind = models.StringField(choices=KINDS)
-    is_organic = models.BooleanField()   # if True: organic fruit, else conventional
+    # easy to add more attributes per fruit, e.g.:
+    #is_organic = models.BooleanField()   # if True: organic fruit, else conventional
 
     seller = ForeignKey(Player)    # creates many-to-one relation -> this fruit is sold by a certain player, a player
                                    # can sell many fruits
