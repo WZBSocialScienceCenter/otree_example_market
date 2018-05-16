@@ -25,13 +25,21 @@ class CreateOffersPage(Page):
             return
 
         offers_formset = OffersFormSet(self.form.data)
-
+        offers_objs = []
+        cost = 0
         for form_idx, form in enumerate(offers_formset.forms):
             if form.is_valid():
-                offer = FruitOffer.objects.create(**form.cleaned_data, seller=self.player)
-                offer.save()
-            else:   # TODO: invalid forms are not handled well so far
+                offer = FruitOffer(**form.cleaned_data, seller=self.player)
+                cost += offer.amount * FruitOffer.PURCHASE_PRICES[offer.kind]
+                offers_objs.append(offer)
+            else:   # invalid forms are not handled well so far -> we just ignore them
                 print('player %d: invalid form #%d' % (self.player.id_in_group, form_idx))
+
+        # store the offers in the DB
+        FruitOffer.objects.bulk_create(offers_objs)
+
+        # update seller's balance
+        self.player.balance -= cost
 
 
 class PurchasePage(Page):

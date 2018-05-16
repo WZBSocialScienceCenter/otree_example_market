@@ -21,6 +21,10 @@
         #offers .price_disp {
             margin-left: 0.5em;
         }
+
+        #cur_balance {
+            font-weight: bold;
+        }
     </style>
 {% endblock %}
 
@@ -64,7 +68,7 @@
             </ul>
         </div>
 
-        <p>Your balance is now: &dollar;<span id="cur_balance"></span></p>
+        <p>Your balance is now: <span id="cur_balance"></span></p>
     {% endif %}
 
     <p>
@@ -74,11 +78,17 @@
 {% if player.role == 'seller' %}
     <script>
         var PURCHASE_PRICES = {{ purchase_prices|json }};
+        var INITIAL_BALANCE = {{ player.balance|json }};
+        var costs = {};
 
         $('#add_offer').click(function() {
             var form_idx = parseInt($('#id_form-TOTAL_FORMS').val());
+
             var new_offer_form = $($('#empty_offers_form').html().replace(/__prefix__/g, form_idx));
             new_offer_form.find('.offer_counter').text(form_idx+1);
+            new_offer_form.find('input').on('input', formElemChanged);
+            new_offer_form.find('select').on('input', formElemChanged);
+
             $('#offers').append(new_offer_form);
             $('#id_form-TOTAL_FORMS').val(form_idx+1);
         });
@@ -104,16 +114,34 @@
                         }
 
                         price_disp.html('cost: <b>&dollar;' + price.toFixed(2) + '</b>');
+                        costs[form_idx] = price;
                     } else {
                         $('#' + price_disp_id).remove();
+                        costs[form_idx] = 0;
                     }
                 }
             }
+
+            updateBalance();
+        }
+
+        function updateBalance() {
+            var balance = INITIAL_BALANCE;
+
+            for (var form_idx in costs) {
+                if (costs.hasOwnProperty(form_idx)) {
+                    balance -= costs[form_idx];
+                }
+            }
+
+            $('#cur_balance').text('$' + balance.toFixed(2));
         }
 
         $(function() {
             $('#offers input').on('input', formElemChanged);
             $('#offers select').on('input', formElemChanged);
+
+            updateBalance();
         });
     </script>
 {% endif %}
