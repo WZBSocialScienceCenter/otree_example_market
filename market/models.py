@@ -68,7 +68,7 @@ class FruitOffer(Model):
                                    # can sell many fruits
 
 
-class Purchases(Model):
+class Purchase(Model):
     """
     This also links each purchase via `FruitOffer` to a seller
     """
