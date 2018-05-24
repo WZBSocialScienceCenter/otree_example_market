@@ -40,9 +40,9 @@
     {% if player.role == 'buyer' %}
         <p>The sellers are currently deciding on their offers. Just click "Next" and wait until they finished.</p>
     {% else %}
-        <p>You must decide on your offers now. You have an initial balance of <b>{{ player.balance }}</b>.</p>
+        <p>You must decide on your offers now. You have an initial balance of <b>{{ player.initial_balance }}</b>.</p>
 
-        <p>Purchase prices per fruit for you as a seller:</p>
+        <p>Purchase prices per piece for you as a seller:</p>
         <ul>
         {% for fruit_label, price in purchase_prices.items %}
             <li><b>{{ fruit_label }}:</b> {{ price }}</li>

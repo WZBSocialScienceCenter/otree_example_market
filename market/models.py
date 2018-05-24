@@ -29,7 +29,8 @@ class Subsession(BaseSubsession):
     def creating_session(self):   # oTree 2 method name (used to be before_session_starts)
         if self.round_number == 1:
             for p in self.get_players():
-                p.balance = c(random.triangular(1, 20, 10))
+                p.initial_balance = c(random.triangular(1, 20, 10))
+                p.balance = p.initial_balance
 
 
 class Group(BaseGroup):
@@ -37,6 +38,7 @@ class Group(BaseGroup):
 
 
 class Player(BasePlayer):
+    initial_balance = models.CurrencyField()
     balance = models.CurrencyField()
 
     def role(self):

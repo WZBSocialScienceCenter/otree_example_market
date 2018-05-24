@@ -29,7 +29,7 @@
     <p>You are a <b>{{ player.role }}</b>.</p>
 
     {% if player.role == 'buyer' %}
-        <p>You have an initial balance of <b>{{ player.balance }}</b>.</p>
+        <p>You have an initial balance of <b>{{ player.initial_balance }}</b>.</p>
         <p>The following things are offered on the market:</p>
 
         {{ purchases_formset.management_form }}

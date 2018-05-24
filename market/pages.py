@@ -79,22 +79,39 @@ class PurchasePage(Page):
 
         purchases_formset = PurchasesFormSet(self.form.data)
         purchase_objs = []
-        cost = 0    # total cost for the customer
+        total_price = 0    # total cost for the customer
         for form_idx, form in enumerate(purchases_formset.forms):
             if form.is_valid() and form.cleaned_data['amount'] > 0:
                 purchase = Purchase(**form.cleaned_data, buyer=self.player)
-                cost += purchase.amount * purchase.fruit.price
+                purchase.fruit.amount -= purchase.amount        # decrease amount of available fruits
+                prod = purchase.amount * purchase.fruit.price   # total price for this offer
+                purchase.fruit.seller.balance += prod           # increase seller's balance
+                total_price += prod                    # add to total price
                 purchase_objs.append(purchase)
 
         # store the purchases in the DB
         Purchase.objects.bulk_create(purchase_objs)
 
         # update buyer's balance
-        self.player.balance -= cost
+        self.player.balance -= total_price
 
 
 class Results(Page):
-    pass
+    def vars_for_template(self):
+        if self.player.role() == 'buyer':
+            transactions = Purchase.objects.select_related('buyer__subsession', 'buyer__participant',
+                                                           'fruit__seller__participant'). \
+                filter(buyer=self.player).\
+                order_by('fruit__seller', 'fruit__kind')
+        else:
+            transactions = Purchase.objects.select_related('buyer__participant', 'fruit__seller'). \
+                filter(fruit__seller=self.player).\
+                order_by('buyer', 'fruit__kind')
+
+        return {
+            'transactions': transactions,
+            'balance_change': sum([t.amount * t.fruit.price for t in transactions])
+        }
 
 
 page_sequence = [

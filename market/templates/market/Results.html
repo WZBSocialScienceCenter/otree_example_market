@@ -1,0 +1,82 @@
+{% extends "global/Page.html" %}
+{% load otree static %}
+
+{% block styles %}
+    <style>
+    </style>
+{% endblock %}
+
+{% block title %}
+    Results
+{% endblock %}
+
+{% block content %}
+
+    <p>You are a <b>{{ player.role }}</b>.</p>
+
+    {% if player.role == 'buyer' %}
+        <p>You bought the following fruits:</p>
+
+        {% if transactions %}
+            <ul>
+            {% for t in transactions %}
+                <li>{{ t.amount }} pieces of {{ t.fruit.kind }} for {{ t.fruit.price }} per piece from {{ t.fruit.seller.participant.id }}</li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p>You didn't buy any fruits.</p>
+        {% endif %}
+
+        <p>You spent {{ balance_change }} on this and now have a balance of {{ player.balance }}.</p>
+    {% else %}
+        {% if transactions %}
+            <p>You sold the following things:</p>
+            {% for t in transactions %}
+                <li>{{ t.amount }} pieces of {{ t.fruit.kind }} for {{ t.fruit.price }} per piece to {{ t.buyer.participant.id }}</li>
+            {% endfor %}
+        {% else %}
+            <p>You didn't sell any fruits.</p>
+        {% endif %}
+
+        <p>You gained {{ balance_change }} from this and now have a balance of {{ player.balance }}.</p>
+    {% endif %}
+
+    <p>
+        {% next_button %}
+    </p>
+
+{% if player.role == 'buyer' %}
+    <script>
+        var INITIAL_BALANCE = {{ player.balance|json }};
+
+        function updateBalance() {
+            var balance = INITIAL_BALANCE;
+
+            $('#offers input[type=number]').each(function (form_idx, elem) {
+                var amount = parseInt($(elem).val());
+                var price = parseFloat($('#offers .offer-' + form_idx + ' .price').text().substr(1));
+
+                if (!Number.isNaN(amount) && !Number.isNaN(price)) {
+                    balance -= amount * price;
+                }
+            });
+
+
+            $('#cur_balance').text('$' + balance.toFixed(2));
+        }
+
+        $(function() {
+            $('#offers input').on('input', updateBalance);
+            $('#offers input[type=number]').each(function (form_idx, elem) {
+                var inp = $(elem);
+                var available = parseFloat($('#offers .offer-' + form_idx + ' .available').text());
+                inp.attr('min', 0);
+                inp.attr('max', available);
+            });
+
+            updateBalance();
+        });
+    </script>
+{% endif %}
+
+{% endblock %}
