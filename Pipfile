@@ -4,8 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-otree = ">=2.0.27"
-"psycopg2" = ">=2.5.1"
+otree = ">=2.0.0"
 
 [dev-packages]
 
