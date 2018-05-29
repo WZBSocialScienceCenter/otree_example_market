@@ -6,7 +6,6 @@ from otree.api import (
 )
 
 from otree.db.models import ForeignKey, Model
-from django import forms
 
 author = 'Markus Konrad'
 

@@ -20,6 +20,9 @@ SESSION_CONFIGS = [
     },
 ]
 
+# custom URL configuration for JSON data export via market/urls.py
+ROOT_URLCONF = 'market.urls'
+
 
 # ISO-639 code
 # for example: de, fr, ja, ko, zh-hans
@@ -47,8 +50,8 @@ AUTH_LEVEL = environ.get('OTREE_AUTH_LEVEL')
 
 ADMIN_USERNAME = 'admin'
 # for security, best to set admin password in an environment variable
-ADMIN_PASSWORD = environ.get('OTREE_ADMIN_PASSWORD')
-
+#ADMIN_PASSWORD = environ.get('OTREE_ADMIN_PASSWORD')
+ADMIN_PASSWORD = 'admin'   # FOR DEMONSTRATION ONLY -- CHANGE THIS IN YOUR OWN PROJECT!
 
 # Consider '', None, and '0' to be empty/false
 DEBUG = (environ.get('OTREE_PRODUCTION') in {None, '', '0'})
