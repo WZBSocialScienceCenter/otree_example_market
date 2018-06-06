@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block title %}
-    Results
+    Results &mdash; round {{ subsession.round_number }}
 {% endblock %}
 
 {% block content %}
@@ -20,7 +20,7 @@
         {% if transactions %}
             <ul>
             {% for t in transactions %}
-                <li>{{ t.amount }} pieces of {{ t.fruit.kind }} for {{ t.fruit.price }} per piece from {{ t.fruit.seller.participant.id }}</li>
+                <li>{{ t.amount }} pieces of {{ t.fruit.kind }} for {{ t.fruit.price }} per piece from seller {{ t.fruit.seller.participant.id }}</li>
             {% endfor %}
             </ul>
         {% else %}
@@ -32,7 +32,7 @@
         {% if transactions %}
             <p>You sold the following things:</p>
             {% for t in transactions %}
-                <li>{{ t.amount }} pieces of {{ t.fruit.kind }} for {{ t.fruit.price }} per piece to {{ t.buyer.participant.id }}</li>
+                <li>{{ t.amount }} pieces of {{ t.fruit.kind }} for {{ t.fruit.price }} per piece to buyer {{ t.buyer.participant.id }}</li>
             {% endfor %}
         {% else %}
             <p>You didn't sell any fruits.</p>

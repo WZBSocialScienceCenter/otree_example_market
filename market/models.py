@@ -21,7 +21,7 @@ and a price. Then individual N needs to choose which items to buy.
 class Constants(BaseConstants):
     name_in_url = 'market'
     players_per_group = None
-    num_rounds = 1
+    num_rounds = 3
 
 
 class Subsession(BaseSubsession):
@@ -37,8 +37,8 @@ class Group(BaseGroup):
 
 
 class Player(BasePlayer):
-    initial_balance = models.CurrencyField()
-    balance = models.CurrencyField()
+    initial_balance = models.CurrencyField()   # balance at the start of the round
+    balance = models.CurrencyField()           # balance at the end of the round
 
     def role(self):
         if self.id_in_group == 1:

@@ -23,6 +23,10 @@
             margin-left: 0.5em;
         }
 
+        #offers .prev_rounds_info {
+            margin-left: 0.5em;
+        }
+
         #cur_balance {
             font-weight: bold;
         }
@@ -30,7 +34,7 @@
 {% endblock %}
 
 {% block title %}
-    Create offers
+    Create offers &mdash; round {{ subsession.round_number }}
 {% endblock %}
 
 {% block content %}
@@ -79,7 +83,7 @@
 {% if player.role == 'seller' %}
     <script>
         var PURCHASE_PRICES = {{ purchase_prices|json }};
-        var INITIAL_BALANCE = {{ player.balance|json }};
+        var INITIAL_BALANCE = {{ player.initial_balance|json }};
         var costs = {};
 
         $('#add_offer').click(function() {
@@ -142,7 +146,26 @@
             $('#offers input').on('input', formElemChanged);
             $('#offers select').on('input', formElemChanged);
 
+            {% if subsession.round_number > 1 %}
+            $('#offers input[type=number]').each(function (_, inp) {
+                if (inp.id.substr(-6) === 'amount') {
+                    var field = $(inp);
+                    var v = parseInt(field.val());
+                    if (v !== 0) {
+                        var fparent = field.parent();
+                        fparent.parent().find('select').attr('disabled', true);
+                        fparent.append('<span class="prev_rounds_info">You already have ' + v + ' pieces from previous rounds.</span>');
+                        field.val(0);
+                    }
+                }
+            });
+            {% endif %}
+
             updateBalance();
+
+            $('.otree-btn-next').click(function () {
+                $('#offers select').attr('disabled', false);
+            });
         });
     </script>
 {% endif %}

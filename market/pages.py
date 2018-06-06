@@ -36,14 +36,27 @@ class CreateOffersPage(Page):
         cost = 0    # total cost for the seller buying fruits that she or he can offer on the market
         for form_idx, form in enumerate(offers_formset.forms):
             if form.is_valid():
-                offer = FruitOffer(**form.cleaned_data, seller=self.player)
-                cost += offer.amount * FruitOffer.PURCHASE_PRICES[offer.kind]
-                offers_objs.append(offer)
+                if self.subsession.round_number > 1 and form.cleaned_data.get('id'):
+                    new_amount = form.cleaned_data['amount']
+                    new_price = form.cleaned_data['price']
+                    old_offer = form.cleaned_data['id']
+                    if new_amount > 0 or new_price != old_offer.price:  # update existing offer
+                        old_offer.amount += new_amount
+                        old_offer.price = new_price
+                        old_offer.save()   # save existing offer (update)
+                        cost += new_amount * FruitOffer.PURCHASE_PRICES[old_offer.kind]
+                elif form.cleaned_data.get('amount', 0) > 0:
+                    # new offer object
+                    offer = FruitOffer(**form.cleaned_data, seller=self.player)
+                    cost += offer.amount * FruitOffer.PURCHASE_PRICES[offer.kind]
+                    offers_objs.append(offer)
+
             else:   # invalid forms are not handled well so far -> we just ignore them
                 print('player %d: invalid form #%d' % (self.player.id_in_group, form_idx))
 
-        # store the offers in the DB
-        FruitOffer.objects.bulk_create(offers_objs)
+        # store the offers in the DB (insert new data)
+        if offers_objs:
+            FruitOffer.objects.bulk_create(offers_objs)
 
         # update seller's balance
         self.player.balance -= cost
@@ -58,7 +71,8 @@ class PurchasePage(Page):
 
             PurchasesFormSet = get_purchases_formset(len(offers))
             purchases_formset = PurchasesFormSet(initial=[{'amount': 0, 'fruit': offer}
-                                                          for offer in offers])
+                                                          for offer in offers],
+                                                 queryset=Purchase.objects.none())
 
             return {
                 'purchases_formset': purchases_formset,
@@ -83,14 +97,17 @@ class PurchasePage(Page):
         for form_idx, form in enumerate(purchases_formset.forms):
             if form.is_valid() and form.cleaned_data['amount'] > 0:
                 purchase = Purchase(**form.cleaned_data, buyer=self.player)
-                purchase.fruit.amount -= purchase.amount        # decrease amount of available fruits
+                purchase.fruit.amount -= purchase.amount        # decrease amount of available fruit
                 prod = purchase.amount * purchase.fruit.price   # total price for this offer
                 purchase.fruit.seller.balance += prod           # increase seller's balance
                 total_price += prod                    # add to total price
+
+                purchase.fruit.save()   # seller will be saved automatically (as it is a Player object)
                 purchase_objs.append(purchase)
 
         # store the purchases in the DB
         Purchase.objects.bulk_create(purchase_objs)
+
 
         # update buyer's balance
         self.player.balance -= total_price
@@ -113,11 +130,26 @@ class Results(Page):
             'balance_change': sum([t.amount * t.fruit.price for t in transactions])
         }
 
+    def before_next_page(self):
+        # set the current balance as the new initial balance for the next round
+        next_round = self.subsession.round_number + 1
+        next_player = self.player.in_round(next_round)
+        next_player.initial_balance = self.player.balance
+        next_player.balance = next_player.initial_balance
+
+        if self.player.role() == 'seller':
+            # copy sellers' offers to the new round
+            for o in FruitOffer.objects.filter(seller=self.player):
+                o.pk = None
+                o.seller = next_player
+                o.save()
+
 
 page_sequence = [
     CreateOffersPage,
     WaitPage,
     PurchasePage,
     WaitPage,
-    Results
+    Results,
+    WaitPage
 ]
