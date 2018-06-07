@@ -39,12 +39,14 @@ class CreateOffersPage(Page):
                 if self.subsession.round_number > 1 and form.cleaned_data.get('id'):
                     new_amount = form.cleaned_data['amount']
                     new_price = form.cleaned_data['price']
-                    old_offer = form.cleaned_data['id']
-                    if new_amount > 0 or new_price != old_offer.price:  # update existing offer
-                        old_offer.amount += new_amount
-                        old_offer.price = new_price
-                        old_offer.save()   # save existing offer (update)
-                        cost += new_amount * FruitOffer.PURCHASE_PRICES[old_offer.kind]
+                    changed_offer = form.cleaned_data['id']
+                    if len(changed_offer._changed_fields) > 0:  # update existing offer
+                        old_amount = changed_offer._changed_fields.get('amount', None)
+                        if old_amount is not None:
+                            changed_offer.amount = old_amount + new_amount
+                        changed_offer.price = new_price
+                        changed_offer.save()   # save existing offer (update)
+                        cost += new_amount * FruitOffer.PURCHASE_PRICES[changed_offer.kind]
                 elif form.cleaned_data.get('amount', 0) > 0:
                     # new offer object
                     offer = FruitOffer(**form.cleaned_data, seller=self.player)
@@ -97,12 +99,12 @@ class PurchasePage(Page):
         for form_idx, form in enumerate(purchases_formset.forms):
             if form.is_valid() and form.cleaned_data['amount'] > 0:
                 purchase = Purchase(**form.cleaned_data, buyer=self.player)
-                purchase.fruit.amount -= purchase.amount        # decrease amount of available fruit
+                #purchase.fruit.amount -= purchase.amount        # decrease amount of available fruit (this will be done below in the Results page)
                 prod = purchase.amount * purchase.fruit.price   # total price for this offer
                 purchase.fruit.seller.balance += prod           # increase seller's balance
                 total_price += prod                    # add to total price
 
-                purchase.fruit.save()   # seller will be saved automatically (as it is a Player object)
+                #purchase.fruit.save()   # seller will be saved automatically (as it is a Player object)
                 purchase_objs.append(purchase)
 
         # store the purchases in the DB
@@ -138,9 +140,23 @@ class Results(Page):
             next_player.balance = next_player.initial_balance
 
             if self.player.role() == 'seller':
+                purchases_from_seller = list(Purchase.objects.select_related('fruit').filter(fruit__seller=self.player))
                 # copy sellers' offers to the new round
                 for o in FruitOffer.objects.filter(seller=self.player):
                     o.pk = None
+
+                    # find the related purchase if fruit from this offer was bought
+                    related_purchase_ind = None
+                    for p_i, purchase in enumerate(purchases_from_seller):
+                        if purchase.fruit == o:
+                            related_purchase_ind = p_i
+                            break
+
+                    if related_purchase_ind is not None:
+                        # decrease the amount of available fruit for this offer
+                        rel_purchase = purchases_from_seller.pop(related_purchase_ind)
+                        o.amount -= rel_purchase.amount
+
                     o.seller = next_player
                     o.save()
 
