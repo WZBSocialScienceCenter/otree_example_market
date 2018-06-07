@@ -1,6 +1,6 @@
 from otree.api import Currency as c, currency_range
 from ._builtin import Page, WaitPage
-from .models import FruitOffer, Purchase
+from .models import Constants, FruitOffer, Purchase
 from django.forms import modelformset_factory
 
 
@@ -108,7 +108,6 @@ class PurchasePage(Page):
         # store the purchases in the DB
         Purchase.objects.bulk_create(purchase_objs)
 
-
         # update buyer's balance
         self.player.balance -= total_price
 
@@ -131,18 +130,19 @@ class Results(Page):
         }
 
     def before_next_page(self):
-        # set the current balance as the new initial balance for the next round
-        next_round = self.subsession.round_number + 1
-        next_player = self.player.in_round(next_round)
-        next_player.initial_balance = self.player.balance
-        next_player.balance = next_player.initial_balance
+        if self.subsession.round_number < Constants.num_rounds:
+            # set the current balance as the new initial balance for the next round
+            next_round = self.subsession.round_number + 1
+            next_player = self.player.in_round(next_round)
+            next_player.initial_balance = self.player.balance
+            next_player.balance = next_player.initial_balance
 
-        if self.player.role() == 'seller':
-            # copy sellers' offers to the new round
-            for o in FruitOffer.objects.filter(seller=self.player):
-                o.pk = None
-                o.seller = next_player
-                o.save()
+            if self.player.role() == 'seller':
+                # copy sellers' offers to the new round
+                for o in FruitOffer.objects.filter(seller=self.player):
+                    o.pk = None
+                    o.seller = next_player
+                    o.save()
 
 
 page_sequence = [
