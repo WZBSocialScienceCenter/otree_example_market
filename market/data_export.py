@@ -3,6 +3,10 @@ Export all data (including custom models such as FruitOffer and Purchase) as JSO
 
 This file contains several functions copy'n'pasted from oTrees's core code in order to retain compatibility with
 future oTree versions.
+
+See urls.py where the URL route to the data export is defined.
+
+July 2018, Markus Konrad <markus.konrad@wzb.eu>
 """
 
 from collections import OrderedDict
