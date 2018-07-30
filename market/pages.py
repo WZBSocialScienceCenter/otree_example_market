@@ -8,12 +8,20 @@ July 2018, Markus Konrad <markus.konrad@wzb.eu>
 from otree.api import Currency as c, currency_range
 from ._builtin import Page, WaitPage
 from .models import Constants, FruitOffer, Purchase
-from django.forms import modelformset_factory
+from django.forms import modelformset_factory, ModelForm, IntegerField, HiddenInput
+
+
+class OfferForm(ModelForm):
+    old_amount = IntegerField(initial=0, widget=HiddenInput)
+
+    class Meta:
+        model = FruitOffer
+        fields = ('old_amount', 'kind', 'amount', 'price')
 
 
 def get_offers_formset():
     """Helper method that returns a Django formset for a dynamic amount of FruitOffers."""
-    return modelformset_factory(FruitOffer, fields=('kind', 'amount', 'price'), extra=1)
+    return modelformset_factory(FruitOffer, form=OfferForm, extra=1)
 
 
 def get_purchases_formset(n_forms=0):
@@ -43,6 +51,7 @@ class CreateOffersPage(Page):
             # `FruitOffer.PURCHASE_PRICES`.
 
             player_offers_qs = FruitOffer.objects.filter(seller=self.player)   # load existing offers for this player
+
             return {
                 'purchase_prices': FruitOffer.PURCHASE_PRICES,
                 'offers_formset': OffersFormSet(queryset=player_offers_qs),
@@ -73,16 +82,18 @@ class CreateOffersPage(Page):
                     new_amount = form.cleaned_data['amount']
                     new_price = form.cleaned_data['price']
                     changed_offer = form.cleaned_data['id']
-                    if len(changed_offer._changed_fields) > 0:  # update existing offer object
-                        old_amount = changed_offer._changed_fields.get('amount', None)
-                        if old_amount is not None:
-                            changed_offer.amount = old_amount + new_amount   # increment existing amount
-                        changed_offer.price = new_price
-                        changed_offer.save()   # save existing offer (update)
+                    changed_offer.amount = form.cleaned_data['old_amount'] + new_amount   # increment existing amount
+                    changed_offer.price = new_price
+
+                    if changed_offer.amount > 0:
+                        changed_offer.save()    # save existing offer (update)
                         cost += new_amount * FruitOffer.PURCHASE_PRICES[changed_offer.kind]   # update total cost
+                    else:
+                        changed_offer.delete()  # offers that dropped to amount zero will be removed
                 elif form.cleaned_data.get('amount', 0) > 0:    # create new offer
                     # create a new FruitOffer object with the submitted data and set the seller to the current player
-                    offer = FruitOffer(**form.cleaned_data, seller=self.player)
+                    submitted_data = {k: v for k, v in form.cleaned_data.items() if k != 'old_amount'}
+                    offer = FruitOffer(**submitted_data, seller=self.player)
                     cost += offer.amount * FruitOffer.PURCHASE_PRICES[offer.kind]   # update total cost
                     offers_objs.append(offer)
 

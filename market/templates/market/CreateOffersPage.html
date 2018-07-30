@@ -155,6 +155,9 @@
                         var fparent = field.parent();
                         fparent.parent().find('select').attr('disabled', true);
                         fparent.append('<span class="prev_rounds_info">You already have ' + v + ' pieces from previous rounds.</span>');
+
+                        var old_amount_id = '#' + inp.id.substring(0, inp.id.length - 6) + 'old_amount';
+                        $(old_amount_id).val(v);
                         field.val(0);
                     }
                 }
