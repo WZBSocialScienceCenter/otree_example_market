@@ -8,6 +8,10 @@ The experiment "market" that is provided as [oTree](http://www.otree.org/) appli
 
 **Please note:** This is not a complete experiment but only a stripped-down example for illustrative purposes. This means for example, that some sanity checks like checking for negative balances are not implemented.
 
+## Requirements
+
+The code has been tested with oTree v2.1.4 but should run with any oTree version of at least v2.0. 
+
 ## License
 
 Apache License 2.0. See LICENSE file.
