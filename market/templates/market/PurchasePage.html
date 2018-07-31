@@ -63,8 +63,15 @@
 
 {% if player.role == 'buyer' %}
     <script>
+        /**
+         * JavaScript code executed for customers only.
+         */
+
         var INITIAL_BALANCE = {{ player.balance|json }};
 
+        /**
+         * Update balance by subtracting cost from initial balance.
+         */
         function updateBalance() {
             var balance = INITIAL_BALANCE;
 
@@ -81,6 +88,7 @@
             $('#cur_balance').text('$' + balance.toFixed(2));
         }
 
+        // code to be executed when page is fully loaded
         $(function() {
             $('#offers input').on('input', updateBalance);
             $('#offers input[type=number]').each(function (form_idx, elem) {

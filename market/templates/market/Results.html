@@ -44,39 +44,5 @@
     <p>
         {% next_button %}
     </p>
-
-{% if player.role == 'buyer' %}
-    <script>
-        var INITIAL_BALANCE = {{ player.balance|json }};
-
-        function updateBalance() {
-            var balance = INITIAL_BALANCE;
-
-            $('#offers input[type=number]').each(function (form_idx, elem) {
-                var amount = parseInt($(elem).val());
-                var price = parseFloat($('#offers .offer-' + form_idx + ' .price').text().substr(1));
-
-                if (!Number.isNaN(amount) && !Number.isNaN(price)) {
-                    balance -= amount * price;
-                }
-            });
-
-
-            $('#cur_balance').text('$' + balance.toFixed(2));
-        }
-
-        $(function() {
-            $('#offers input').on('input', updateBalance);
-            $('#offers input[type=number]').each(function (form_idx, elem) {
-                var inp = $(elem);
-                var available = parseFloat($('#offers .offer-' + form_idx + ' .available').text());
-                inp.attr('min', 0);
-                inp.attr('max', available);
-            });
-
-            updateBalance();
-        });
-    </script>
-{% endif %}
-
+    
 {% endblock %}
