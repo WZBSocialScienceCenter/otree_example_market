@@ -13,6 +13,8 @@ from otree.api import (
 
 from otree.db.models import ForeignKey, Model
 
+from .admin_extensions import SessionDataExtension
+
 author = 'Markus Konrad'
 
 doc = """
@@ -22,6 +24,8 @@ Implemented with custom data models.
 Many individuals (1 ... N-1) are selling fruit with two attributes (e.g. kind of fruit and price). Each chooses a kind
 and a price. Then individual N needs to choose which fruit to buy.  
 """
+
+SessionDataExtension.additional_models = ['FruitOffer', 'Purchase']
 
 
 class Constants(BaseConstants):
@@ -106,4 +110,3 @@ class Purchase(Model):
                                        # fruits left)
     buyer = ForeignKey(Player)         # creates many-to-one relation -> this fruit is bought by a certain player
                                        # *in a certain round*. a player can buy many fruits.
-
