@@ -10,6 +10,10 @@ from django.conf.urls import url
 from otree.urls import urlpatterns
 
 from . import data_export
+from . import admin_extensions
 
+
+urlpatterns = [pttrn for pttrn in urlpatterns if pttrn.name != 'SessionData']
 
 urlpatterns.append(url(r'^dataexport/market/$', data_export.export_view_json))
+urlpatterns.append(url(r"^SessionData/(?P<code>[a-z0-9]+)/$", admin_extensions.SessionDataExtension.as_view(), name='SessionData'))
