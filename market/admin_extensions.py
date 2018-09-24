@@ -1,83 +1,55 @@
-from collections import OrderedDict, Callable
+from collections import OrderedDict, defaultdict
 from importlib import import_module
+from pprint import pprint
 
-from django.db.models.fields import Field
 from otree.views.admin import SessionData, pretty_name, pretty_round_name
-from otree.export import sanitize_for_live_update, get_field_names_for_live_update, get_rows_for_live_update
-
-
-# def get_rows_for_live_update(subsession):
-#     models_module = import_module(subsession.__module__)
-#     Player = models_module.Player
-#     Group = models_module.Group
-#     Subsession = models_module.Subsession
-#
-#     columns_for_models = {
-#         Model.__name__.lower(): get_field_names_for_live_update(Model)
-#         for Model in [Player, Group, Subsession]
-#     }
-#
-#     # we had a strange result on one person's heroku instance
-#     # where Meta.ordering on the Player was being ingnored
-#     # when you use a filter. So we add one explicitly.
-#     players = Player.objects.filter(
-#         subsession_id=subsession.pk).select_related(
-#         'group', 'subsession').order_by('pk')
-#
-#     model_order = ['player', 'group', 'subsession']
-#
-#     rows = []
-#     for player in players:
-#         row = []
-#         for model_name in model_order:
-#             if model_name == 'player':
-#                 model_instance = player
-#             else:
-#                 model_instance = getattr(player, model_name)
-#
-#             for colname in columns_for_models[model_name]:
-#
-#                 attr = getattr(model_instance, colname, '')
-#                 if isinstance(attr, Callable):
-#                     if model_name == 'player' and colname == 'role' \
-#                             and model_instance.group is None:
-#                         attr = ''
-#                     else:
-#                         try:
-#                             attr = attr()
-#                         except:
-#                             attr = "(error)"
-#                 row.append(sanitize_for_live_update(attr))
-#         rows.append(row)
-#
-#     return columns_for_models, rows
-
-
-def get_field_names_for_custom_model(model):
-    return [f.name for f in model._meta.fields]
-
-
-def get_rows_for_live_update_from_custom_models(subsession, custom_model_names):
-    models_module = import_module(subsession.__module__)
-
-    custom_models = []   # classes
-
-    for modelname in custom_model_names:
-        try:
-            custom_models.append(getattr(models_module, modelname))
-        except AttributeError:
-            raise ValueError('custom model `%s` not defined in models module')
-
-    columns_for_models = {model.__name__.lower(): get_field_names_for_custom_model(model)
-                          for model in custom_models}
-
-    rows = []
-
-    return columns_for_models, rows
+from otree.export import sanitize_for_live_update, get_rows_for_live_update
 
 
 class SessionDataExtension(SessionData):
-    additional_models = []
+    custom_models = []   # model names as strings (case-sensitive!), *not* model classes
+
+    @classmethod
+    def get_field_names_for_custom_model(cls, model):
+        return [f.name for f in model._meta.fields]
+
+    def custom_rows_queryset(self, models_module, **kwargs):
+        base_model = getattr(models_module, 'Player')
+        prefetch_related_args = [m.lower() + '_set' for m in self.custom_models]
+
+        return base_model.objects\
+            .filter(subsession_id=kwargs['subsession'].pk)\
+            .prefetch_related(*prefetch_related_args)
+
+    def custom_rows_builder(self, qs, columns_for_custom_models):
+        rows = defaultdict(lambda: defaultdict(list))
+
+        for base_instance in qs:
+            for model_name in self.custom_models:
+                model_name_lwr = model_name.lower()
+                row = []
+                model_results_set = getattr(base_instance, model_name_lwr + '_set').all()
+                for res in model_results_set:
+                    for colname in columns_for_custom_models[model_name_lwr]:
+                        attr = getattr(res, colname, '')
+                        row.append(sanitize_for_live_update(attr))
+                rows[str(base_instance.id)][model_name].append(row)
+
+        return rows
+
+    def custom_columns_builder(self, models_module):
+        custom_model_classes = []
+
+        for modelname in self.custom_models:
+            try:
+                custom_model_classes.append(getattr(models_module, modelname))
+            except AttributeError:
+                raise ValueError('custom model `%s` not defined in models module')
+
+        columns_for_models = {model.__name__.lower(): self.get_field_names_for_custom_model(model)
+                              for model in custom_model_classes}
+
+        return columns_for_models
 
     def get_context_data(self, **kwargs):
         def columns_for_any_modelname(modelname):
@@ -103,7 +75,12 @@ class SessionDataExtension(SessionData):
             # if the app is removed from SESSION_CONFIGS after the session is
             # created.
             columns_for_models, subsession_rows = get_rows_for_live_update(subsession)
-            columns_for_custom_models, custom_models_rows = get_rows_for_live_update_from_custom_models(subsession, self.additional_models)
+            models_module = import_module(subsession.__module__)
+            columns_for_custom_models = self.custom_columns_builder(models_module)
+            custom_models_qs = self.custom_rows_queryset(models_module, subsession=subsession)
+            custom_rows = self.custom_rows_builder(custom_models_qs, columns_for_custom_models)
+            pprint(columns_for_custom_models)
+            pprint(custom_rows)
 
             if not rows:
                 rows = subsession_rows
@@ -123,7 +100,7 @@ class SessionDataExtension(SessionData):
 
             this_round_fields = []
             this_round_fields_json = []
-            for model_name in ['Player'] + self.additional_models + ['Group', 'Subsession']:
+            for model_name in ['Player'] + self.custom_models + ['Group', 'Subsession']:
                 column_names = columns_for_any_modelname(model_name.lower())
                 this_model_fields = [pretty_name(n) for n in column_names]
                 this_model_fields_json = [

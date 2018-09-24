@@ -25,7 +25,7 @@ Many individuals (1 ... N-1) are selling fruit with two attributes (e.g. kind of
 and a price. Then individual N needs to choose which fruit to buy.  
 """
 
-SessionDataExtension.additional_models = ['FruitOffer', 'Purchase']
+SessionDataExtension.custom_models = ['FruitOffer', 'Purchase']
 
 
 class Constants(BaseConstants):
