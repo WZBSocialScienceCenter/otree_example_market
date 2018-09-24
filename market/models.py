@@ -93,6 +93,10 @@ class FruitOffer(Model):
         data_view = {
             'exclude_fields': ['seller']
         }
+        export_data = {
+            'exclude_fields': ['seller'],
+            'link_with': 'seller'
+        }
 
 
 class Purchase(Model):
@@ -115,4 +119,8 @@ class Purchase(Model):
     class CustomModelConf:
         data_view = {
             'exclude_fields': ['buyer']
+        }
+        export_data = {
+            'exclude_fields': ['buyer'],
+            'link_with': 'buyer'
         }

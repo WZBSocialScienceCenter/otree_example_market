@@ -3,40 +3,47 @@ from importlib import import_module
 from pprint import pprint
 
 from otree.views.admin import SessionData, pretty_name, pretty_round_name
-from otree.export import sanitize_for_live_update, get_rows_for_live_update
+from otree.views.export import ExportApp, get_export_response
+from otree.export import sanitize_for_live_update, get_rows_for_live_update, _export_csv, _export_xlsx,\
+    get_field_names_for_csv
+from otree.common_internal import get_models_module
 from otree.db.models import Model
+from otree.models.participant import Participant
+from otree.models.session import Session
+
+
+def get_custom_models_conf(models_module, for_action):
+    assert for_action in ('data_view', 'export_data')
+
+    custom_models_conf = {}
+    for attr in dir(models_module):
+        val = getattr(models_module, attr)
+        try:
+            if issubclass(val, Model):
+                metaclass = getattr(val, 'CustomModelConf', None)
+                if metaclass and hasattr(metaclass, for_action):
+                    custom_models_conf[attr] = {
+                        'class': val,
+                        for_action: getattr(metaclass, for_action)
+                    }
+        except TypeError:
+            pass
+
+    return custom_models_conf
+
+
+def get_field_names_for_custom_model(model, conf):
+    if 'fields' in conf:
+        fields = conf['fields']
+    else:
+        fields = [f.name for f in model._meta.fields]
+
+    exclude = set(conf.get('exclude_fields', []))
+
+    return [f for f in fields if f not in exclude]
 
 
 class SessionDataExtension(SessionData):
-    @staticmethod
-    def get_field_names_for_custom_model(model, conf):
-        if 'fields' in conf:
-            fields = conf['fields']
-        else:
-            fields = [f.name for f in model._meta.fields]
-
-        exclude = set(conf.get('exclude_fields', []))
-
-        return [f for f in fields if f not in exclude]
-
-    @staticmethod
-    def get_custom_models_conf(models_module):
-        custom_models_conf = {}
-        for attr in dir(models_module):
-            val = getattr(models_module, attr)
-            try:
-                if issubclass(val, Model):
-                    metaclass = getattr(val, 'CustomModelConf', None)
-                    if metaclass and hasattr(metaclass, 'data_view'):
-                        custom_models_conf[attr] = {
-                            'class': val,
-                            'data_view': getattr(metaclass, 'data_view')
-                        }
-            except TypeError:
-                pass
-
-        return custom_models_conf
-
     @staticmethod
     def custom_rows_queryset(models_module, custom_models_names,  **kwargs):
         base_class = 'Player'
@@ -73,8 +80,9 @@ class SessionDataExtension(SessionData):
 
         return rows
 
-    def custom_columns_builder(self, custom_model_conf):
-        columns_for_models = {name.lower(): self.get_field_names_for_custom_model(conf['class'], conf['data_view'])
+    @staticmethod
+    def custom_columns_builder(custom_model_conf):
+        columns_for_models = {name.lower(): get_field_names_for_custom_model(conf['class'], conf['data_view'])
                               for name, conf in custom_model_conf.items()}
 
         return columns_for_models
@@ -155,7 +163,7 @@ class SessionDataExtension(SessionData):
 
         for subsession in session.get_subsessions():
             models_module = import_module(subsession.__module__)
-            custom_models_conf = self.get_custom_models_conf(models_module)
+            custom_models_conf = get_custom_models_conf(models_module, 'data_view')
             custom_models_names = list(custom_models_conf.keys())
             custom_models_names_lwr = [n.lower() for n in custom_models_names]
 
@@ -232,3 +240,82 @@ class SessionDataExtension(SessionData):
     def get_template_names(self):
         return ['otree/admin/SessionDataExtension.html']
 
+
+class ExportAppExtension(ExportApp):
+    @staticmethod
+    def custom_columns_builder(custom_model_conf):
+        columns_for_models = {name.lower(): get_field_names_for_custom_model(conf['class'], conf['export_data'])
+                              for name, conf in custom_model_conf.items()}
+
+        return columns_for_models
+
+    def get_data_for_app(self, app_name):
+        models_module = get_models_module(app_name)
+        Player = models_module.Player
+        Group = models_module.Group
+        Subsession = models_module.Subsession
+
+        custom_models_conf = get_custom_models_conf(models_module, 'export_data')
+        custom_models_names = list(custom_models_conf.keys())
+        custom_models_names_lwr = [n.lower() for n in custom_models_names]
+
+        columns_for_models = {m.__name__.lower(): get_field_names_for_csv(m)
+                              for m in [Player, Group, Subsession, Participant, Session]}
+
+        columns_for_custom_models = self.custom_columns_builder(custom_models_conf)
+
+        custom_models_links = {}
+        std_models_select_related = defaultdict(list)
+        for model_name, conf in custom_models_conf.items():
+            model = conf['class']
+            link_field = getattr(model, conf['export_data']['link_with'])
+            rel_model = link_field.field.related_model
+            custom_models_links[model_name] = rel_model
+            std_models_select_related[rel_model.__name__.lower()].append(model_name.lower())
+
+        participant_ids = Player.objects.values_list('participant_id', flat=True)
+        session_ids = Subsession.objects.values_list('session_id', flat=True)
+
+        qs_players = Player.objects.order_by('id').select_related(*std_models_select_related.get('player', [])).values()
+        qs_group = Group.objects.select_related(*std_models_select_related.get('group', []))
+        qs_subsession = Subsession.objects.select_related(*std_models_select_related.get('subsession', []))
+
+        value_dicts = {
+            'group': {row['id']: row for row in qs_group.values()},
+            'subsession': {row['id']: row for row in qs_subsession.values()},
+            'participant': {row['id']: row for row in
+                            Participant.objects.filter(
+                                id__in=participant_ids).values()},
+            'session': {row['id']: row for row in
+                        Session.objects.filter(id__in=session_ids).values()}
+        }
+
+        model_order = ['participant', 'player'] + custom_models_names_lwr + ['group', 'subsession', 'session']
+
+        header_row = []
+        for model_name in model_order:
+            if model_name in custom_models_names_lwr:
+                colnames = columns_for_custom_models[model_name]
+            else:
+                colnames = columns_for_models[model_name]
+
+            header_row.extend(['{}.{}'.format(model_name, coln) for coln in colnames])
+
+        rows = [header_row]
+
+        return rows
+
+
+
+    def get(self, request, *args, **kwargs):
+        app_name = kwargs['app_name']
+        response, file_extension = get_export_response(request, app_name)
+
+        rows = self.get_data_for_app(app_name)
+
+        if file_extension == 'xlsx':
+            _export_xlsx(response, rows)
+        else:
+            _export_csv(response, rows)
+
+        return response
