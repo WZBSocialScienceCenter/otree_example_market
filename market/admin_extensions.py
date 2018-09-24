@@ -66,7 +66,7 @@ class SessionDataExtension(SessionData):
                         attr = getattr(res, colname, '')
                         if isinstance(attr, Model):
                             attr = attr.pk
-                        
+
                         row.append(sanitize_for_live_update(attr))
 
                     rows[key][model_name_lwr].append(row)
