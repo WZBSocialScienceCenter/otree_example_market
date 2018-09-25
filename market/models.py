@@ -94,7 +94,7 @@ class FruitOffer(Model):
             'exclude_fields': ['seller']
         }
         export_data = {
-            'exclude_fields': ['seller'],
+            'exclude_fields': ['seller_id'],
             'link_with': 'seller'
         }
 
@@ -121,6 +121,6 @@ class Purchase(Model):
             'exclude_fields': ['buyer']
         }
         export_data = {
-            'exclude_fields': ['buyer'],
+            'exclude_fields': ['buyer_id'],
             'link_with': 'buyer'
         }
