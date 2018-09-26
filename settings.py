@@ -21,6 +21,7 @@ SESSION_CONFIGS = [
 ]
 
 # custom URL and WebSockets configuration
+# this is important -- otherwise otreeutils' admin extensions won't be activated
 ROOT_URLCONF = 'market.urls'
 CHANNEL_ROUTING = 'market.routing.channel_routing'
 

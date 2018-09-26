@@ -90,6 +90,10 @@ class FruitOffer(Model):
                                    # can sell many fruits
 
     class CustomModelConf:
+        """
+        Configuration for otreeutils admin extensions.
+        This class and its attributes must be existent in order to include this model in the data viewer / data export.
+        """
         data_view = {
             'exclude_fields': ['seller']
         }
@@ -117,6 +121,10 @@ class Purchase(Model):
                                        # *in a certain round*. a player can buy many fruits.
 
     class CustomModelConf:
+        """
+        Configuration for otreeutils admin extensions.
+        This class and its attributes must be existent in order to include this model in the data viewer / data export.
+        """
         data_view = {
             'exclude_fields': ['buyer']
         }
