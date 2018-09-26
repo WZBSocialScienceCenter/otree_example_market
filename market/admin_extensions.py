@@ -13,6 +13,8 @@ from otree.db.models import Model
 from otree.models.participant import Participant
 from otree.models.session import Session
 
+from otreeutils.common import hierarchical_data_columnwise, columnwise_data_as_rows
+
 
 def get_custom_models_conf(models_module, for_action):
     assert for_action in ('data_view', 'export_data')
@@ -272,21 +274,12 @@ class ExportAppExtension(ExportApp):
     def get_data_rows_for_app(self, app_name):
         data = self.get_hierarchical_data_for_app(app_name)
 
-        # model_order = ['participant', 'player'] + custom_models_names_lwr + ['group', 'subsession', 'session']
-        #
-        # header_row = []
-        # for model_name in model_order:
-        #     if model_name in custom_models_names_lwr:
-        #         colnames = columns_for_custom_models[model_name]
-        #     else:
-        #         colnames = columns_for_models[model_name]
-        #
-        #     header_row.extend(['{}.{}'.format(model_name, coln) for coln in colnames])
-        #
-        # rows = [header_row]
+        colnames, data_rowwise = columnwise_data_as_rows(hierarchical_data_columnwise(data))
 
-        raise ValueError('not implemented yet')
+        rows = [[col.replace('__', '') for col in colnames]]
+        rows.extend(data_rowwise)
 
+        return rows
 
     def get_hierarchical_data_for_app(self, app_name):
         models_module = get_models_module(app_name)
@@ -295,8 +288,6 @@ class ExportAppExtension(ExportApp):
         Subsession = models_module.Subsession
 
         custom_models_conf = get_custom_models_conf(models_module, 'export_data')
-        custom_models_names = list(custom_models_conf.keys())
-        #custom_models_names_lwr = [n.lower() for n in custom_models_names]
 
         columns_for_models = {m.__name__.lower(): get_field_names_for_csv(m)
                               for m in [Player, Group, Subsession, Participant, Session]}
@@ -353,10 +344,6 @@ class ExportAppExtension(ExportApp):
                 m = model.__name__.lower()
                 prefetch_custom[otree_model_name_lwr][m] = _rows_per_key_from_queryset(custom_qs, link_field_name)
 
-        # columndata_per_model = defaultdict(lambda: defaultdict(list))   # model name -> column name -> list of data
-        #                                                                 # (must be rectangular, i.e. all data lists must
-        #                                                                 #  have same length)
-
         output_nested = []
 
         for sess in Session.objects.filter(id__in=session_ids).values():
@@ -402,7 +389,6 @@ class ExportAppExtension(ExportApp):
             output_nested.append(out_sess)
 
         return output_nested
-
 
     def get(self, request, *args, **kwargs):
         app_name = kwargs['app_name']
