@@ -62,4 +62,7 @@ DEMO_PAGE_INTRO_HTML = """ """
 SECRET_KEY = 'cg&17@9#0hjwhzzx-7jqpg(*qlrbcc^_xqgwx@e8f=9n2b0-2$'
 
 # if an app is included in SESSION_CONFIGS, you don't need to list it here
-INSTALLED_APPS = ['otree']
+INSTALLED_APPS = [
+    'otree',
+    'otreeutils'    # this is important -- otherwise otreeutils' templates and static files won't be accessible
+]

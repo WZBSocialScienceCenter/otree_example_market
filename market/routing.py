@@ -1,13 +1,9 @@
-from channels.routing import route_class
+"""
+Custom channels routes as explained in https://otree.readthedocs.io/en/latest/misc/django.html#real-time-and-websockets
 
-from otree.channels import consumers as otree_consumers
-from otree.channels.routing import channel_routing
+This adds routes for custom admin channels (for data export) from otreeutils.
 
-from .admin_extensions.channels_consumers import ExportDataChannelsExtension
+Sept. 2018, Markus Konrad <markus.konrad@wzb.eu>
+"""
 
-channel_routing = [route for route in channel_routing if route.consumer.__name__ != 'ExportData']
-
-channel_routing.append(route_class(
-    ExportDataChannelsExtension,
-    path=r"^/export/$")
-)
+from otreeutils.admin_extensions.routing import channel_routing
