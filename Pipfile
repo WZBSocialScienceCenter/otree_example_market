@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 otree = ">=2.0.0"
+otreeutils = ">=0.4.0"
 
 [dev-packages]
 

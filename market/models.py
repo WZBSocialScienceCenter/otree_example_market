@@ -89,6 +89,19 @@ class FruitOffer(Model):
     seller = ForeignKey(Player)    # creates many-to-one relation -> this fruit is sold by a certain player, a player
                                    # can sell many fruits
 
+    class CustomModelConf:
+        """
+        Configuration for otreeutils admin extensions.
+        This class and its attributes must be existent in order to include this model in the data viewer / data export.
+        """
+        data_view = {
+            'exclude_fields': ['seller']
+        }
+        export_data = {
+            'exclude_fields': ['seller_id'],
+            'link_with': 'seller'
+        }
+
 
 class Purchase(Model):
     """
@@ -107,3 +120,15 @@ class Purchase(Model):
     buyer = ForeignKey(Player)         # creates many-to-one relation -> this fruit is bought by a certain player
                                        # *in a certain round*. a player can buy many fruits.
 
+    class CustomModelConf:
+        """
+        Configuration for otreeutils admin extensions.
+        This class and its attributes must be existent in order to include this model in the data viewer / data export.
+        """
+        data_view = {
+            'exclude_fields': ['buyer']
+        }
+        export_data = {
+            'exclude_fields': ['buyer_id'],
+            'link_with': 'buyer'
+        }

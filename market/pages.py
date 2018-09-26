@@ -11,6 +11,12 @@ from .models import Constants, FruitOffer, Purchase
 from django.forms import modelformset_factory, ModelForm, IntegerField, HiddenInput
 
 
+class NormalWaitPage(WaitPage):
+    # For whatever reason, oTree suddenly issues a warning "page_sequence cannot contain a class called 'WaitPage'"...
+    # So it appears we have to define an own WaitPage which is exactly the same...
+    pass
+
+
 class OfferForm(ModelForm):
     old_amount = IntegerField(initial=0, widget=HiddenInput)
 
@@ -257,9 +263,9 @@ class Results(Page):
 # results can only be shown after purchases were made.
 page_sequence = [
     CreateOffersPage,
-    WaitPage,
+    NormalWaitPage,
     PurchasePage,
-    WaitPage,
+    NormalWaitPage,
     Results,
-    WaitPage
+    NormalWaitPage
 ]
