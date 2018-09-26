@@ -14,8 +14,8 @@ from . import admin_extensions
 
 
 patterns_conf = {
-    'SessionData': (r"^SessionData/(?P<code>[a-z0-9]+)/$", admin_extensions.SessionDataExtension),
-    'ExportApp': (r"^ExportApp/(?P<app_name>[\w.]+)/$", admin_extensions.ExportAppExtension),
+    'SessionData': (r"^SessionData/(?P<code>[a-z0-9]+)/$", admin_extensions.views.SessionDataExtension),
+    'ExportApp': (r"^ExportApp/(?P<app_name>[\w.]+)/$", admin_extensions.views.ExportAppExtension),
 }
 
 

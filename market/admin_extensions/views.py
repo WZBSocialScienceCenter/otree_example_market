@@ -271,8 +271,9 @@ class ExportAppExtension(ExportApp):
 
         return columns_for_models
 
-    def get_data_rows_for_app(self, app_name):
-        data = self.get_hierarchical_data_for_app(app_name)
+    @classmethod
+    def get_data_rows_for_app(cls, app_name):
+        data = cls.get_hierarchical_data_for_app(app_name)
 
         colnames, data_rowwise = columnwise_data_as_rows(hierarchical_data_columnwise(data))
 
@@ -281,7 +282,8 @@ class ExportAppExtension(ExportApp):
 
         return rows
 
-    def get_hierarchical_data_for_app(self, app_name):
+    @classmethod
+    def get_hierarchical_data_for_app(cls, app_name):
         models_module = get_models_module(app_name)
         Player = models_module.Player
         Group = models_module.Group
@@ -292,7 +294,7 @@ class ExportAppExtension(ExportApp):
         columns_for_models = {m.__name__.lower(): get_field_names_for_csv(m)
                               for m in [Player, Group, Subsession, Participant, Session]}
 
-        columns_for_custom_models = self.custom_columns_builder(custom_models_conf)
+        columns_for_custom_models = cls.custom_columns_builder(custom_models_conf)
 
         custom_models_links = defaultdict(list)
         std_models_select_related = defaultdict(list)

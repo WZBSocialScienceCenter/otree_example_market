@@ -20,9 +20,9 @@ SESSION_CONFIGS = [
     },
 ]
 
-# custom URL configuration for JSON data export via market/urls.py
+# custom URL and WebSockets configuration
 ROOT_URLCONF = 'market.urls'
-
+CHANNEL_ROUTING = 'market.routing.channel_routing'
 
 # ISO-639 code
 # for example: de, fr, ja, ko, zh-hans
