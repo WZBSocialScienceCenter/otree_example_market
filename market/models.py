@@ -95,7 +95,8 @@ class FruitOffer(Model):
         This class and its attributes must be existent in order to include this model in the data viewer / data export.
         """
         data_view = {
-            'exclude_fields': ['seller']
+            'exclude_fields': ['seller_id'],
+            'link_with': 'seller'
         }
         export_data = {
             'exclude_fields': ['seller_id'],
@@ -126,7 +127,8 @@ class Purchase(Model):
         This class and its attributes must be existent in order to include this model in the data viewer / data export.
         """
         data_view = {
-            'exclude_fields': ['buyer']
+            'exclude_fields': ['buyer_id'],
+            'link_with': 'buyer'
         }
         export_data = {
             'exclude_fields': ['buyer_id'],
